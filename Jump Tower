@@ -1,0 +1,248 @@
+-- ⚡ Thunder | Hub - Auto Script Full Version with Quick Climb + Speed Input (Stable)
+if not game:IsLoaded() then game.Loaded:Wait() end
+
+if game:GetService("CoreGui"):FindFirstChild("ScreenGui") then
+    game:GetService("CoreGui"):FindFirstChild("ScreenGui"):Destroy()
+end
+
+local UpdateVersion = "0.0.4"
+UserSettings().GameSettings.MasterVolume = 0
+local HttpService = game:GetService("HttpService")
+local NameFile = game.Players.LocalPlayer.Name..".txt"
+local default = {
+    Config = {
+        ScriptVersion = UpdateVersion,
+        ClimbSpeed = 1000,
+        DisAimlock = 0,
+        ListSkills = {},
+        ListMons = {},
+        ListPortal = {},
+        Autofarm = false,
+        AutoEquip = false,
+        Melee = false,
+        Weapon = false,
+        Defense = false,
+        DemonFruit = false,
+        AutoEquipWepon = false,
+        AutoSave = true,
+    },
+}
+
+if not isfolder("ThunderHub") then makefolder("ThunderHub") end
+if not isfolder("ThunderHub/ThunderHub Jump Tower") then
+    makefolder("ThunderHub/ThunderHub Jump Tower")
+end
+
+if not pcall(function() readfile("ThunderHub/ThunderHub Jump Tower/" .. NameFile) end) then
+    writefile("ThunderHub/ThunderHub Jump Tower/" .. NameFile, HttpService:JSONEncode(default))
+end
+
+local set = HttpService:JSONDecode(readfile("ThunderHub/ThunderHub Jump Tower/" .. NameFile))
+
+if set.Config.ScriptVersion ~= UpdateVersion then
+    delfile("ThunderHub/ThunderHub Jump Tower/".. NameFile)
+    game.StarterGui:SetCore("SendNotification", {
+        Title = "⚡ Thunder | Hub",
+        Text = "New Version Available!",
+        Duration = 5,
+    })
+    task.wait(2)
+    game:GetService("TeleportService"):Teleport(game.PlaceId, game.Players.LocalPlayer)
+end
+
+local function save()
+    if set.Config.AutoSave and set.Config.ScriptVersion == UpdateVersion then
+        writefile("ThunderHub/ThunderHub Jump Tower/" .. NameFile, HttpService:JSONEncode(set))
+    end
+end
+
+local Fluent = loadstring(game:HttpGet("https://raw.githubusercontent.com/StormSKz/Fluent/master/main.lua"))()
+local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/StormSKz/Fluent/master/Addons/SaveManager.lua"))()
+local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/StormSKz/Fluent/master/Addons/InterfaceManager.lua"))()
+
+local Window = Fluent:CreateWindow({
+    Title = "⚡ Thunder | Hub " .. set.Config.ScriptVersion,
+    SubTitle = "by Aaron",
+    TabWidth = 160,
+    Size = UDim2.fromOffset(580, 460),
+    Acrylic = false,
+    Theme = "Darker",
+    MinimizeKey = Enum.KeyCode.P
+})
+
+local Tabs = {
+    Main = Window:AddTab({ Title = "Main", Icon = "" }),
+}
+
+local Options = Fluent.Options
+
+Tabs.Main:AddInput("ClimbSpeedInput", {
+    Title = "Climb Speed",
+    Default = tostring(set.Config.ClimbSpeed),
+    Placeholder = "Enter speed (e.g. 1000)",
+    Numeric = true,
+    Callback = function(value)
+        local num = tonumber(value)
+        if num and num > 0 then
+            set.Config.ClimbSpeed = num
+            save()
+            Fluent:Notify({ Title = "Speed Updated", Content = "Climb speed set to " .. num, Duration = 3 })
+        else
+            Fluent:Notify({ Title = "Invalid Input", Content = "Please enter a valid number", Duration = 3 })
+        end
+    end
+})
+
+local function startClimb()
+    local rootPart = game.Players.LocalPlayer.Character:WaitForChild("HumanoidRootPart")
+    local baseY = 1
+    local targetY = 14395
+    local targetHeight = targetY - baseY
+    local speed = set.Config.ClimbSpeed or 1000
+
+    local climbVelocity = Instance.new("BodyVelocity")
+    climbVelocity.Velocity = Vector3.new(0, speed, 0)
+    climbVelocity.MaxForce = Vector3.new(0, math.huge, 0)
+    climbVelocity.P = 1250
+    climbVelocity.Name = "ClimbUpForce"
+    climbVelocity.Parent = rootPart
+
+    local RunService = game:GetService("RunService")
+    local connection
+    connection = RunService.Heartbeat:Connect(function()
+        local height = rootPart.Position.Y - baseY
+        if height >= targetHeight then
+            climbVelocity:Destroy()
+            connection:Disconnect()
+            Fluent:Notify({
+                Title = "Climb Complete",
+                Content = "You have reached the top.",
+                Duration = 3
+            })
+        end
+    end)
+end
+
+Fluent:Notify({ Title = "ThunderHub", Content = "GUI Loaded", Duration = 4 })
+Tabs.Main:AddParagraph({ Title = "Welcome", Content = "⚡ ThunderHub by Aaron\nModified by You!" })
+
+Tabs.Main:AddButton({
+    Title = "Quick Climb",
+    Description = "Rapidly climb to the top of the tower",
+    Callback = function()
+        Window:Dialog({
+            Title = "Start Climb?",
+            Content = "Do you want to climb to the top instantly?",
+            Buttons = {
+                {
+                    Title = "Yes",
+                    Callback = function()
+                        Fluent:Notify({
+                            Title = "Climbing...",
+                            Content = "Ascending to the top!",
+                            Duration = 3
+                        })
+                        startClimb()
+                    end
+                },
+                {
+                    Title = "Cancel",
+                    Callback = function()
+                        print("Climb canceled.")
+                    end
+                }
+            }
+        })
+    end
+})
+
+-- Floating Button
+if game.CoreGui:FindFirstChild("ThunderHub") then
+    game.CoreGui.ThunderHub:Destroy()
+end
+
+local ThunderGui = Instance.new("ScreenGui")
+ThunderGui.Name = "ThunderHub"
+ThunderGui.ResetOnSpawn = false
+ThunderGui.IgnoreGuiInset = true
+ThunderGui.Parent = game.CoreGui
+
+local DragFrame = Instance.new("Frame")
+DragFrame.Name = "DragFrame"
+DragFrame.Size = UDim2.new(0, 60, 0, 60)
+DragFrame.Position = UDim2.new(0.5, -35, 0, 100)
+DragFrame.BackgroundTransparency = 1
+DragFrame.Active = true
+DragFrame.Parent = ThunderGui
+
+local Button = Instance.new("ImageButton")
+Button.Name = "ToggleButton"
+Button.Size = UDim2.new(1, 0, 1, 0)
+Button.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+Button.BackgroundTransparency = 0.2
+Button.Image = "rbxassetid://106076048327121"
+Button.Parent = DragFrame
+
+local UICorner = Instance.new("UICorner")
+UICorner.CornerRadius = UDim.new(0, 16)
+UICorner.Parent = Button
+
+local UserInputService = game:GetService("UserInputService")
+local dragging = false
+local dragStart = Vector2.new()
+local startPos = Vector2.new()
+
+local function updateDrag()
+    local mousePos = UserInputService:GetMouseLocation()
+    local delta = mousePos - dragStart
+    local newPos = startPos + delta
+    DragFrame.Position = UDim2.new(0, newPos.X, 0, newPos.Y)
+end
+
+Button.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        task.defer(function()
+            game:GetService("RunService").RenderStepped:Wait()
+            dragging = true
+            dragStart = UserInputService:GetMouseLocation()
+            startPos = DragFrame.AbsolutePosition
+        end)
+
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        updateDrag()
+    end
+end)
+
+Button.MouseButton1Click:Connect(function()
+    local target = game:GetService("CoreGui"):FindFirstChild("ScreenGui")
+    if target then
+        target.Enabled = not target.Enabled
+    end
+end)
+
+SaveManager:SetLibrary(Fluent)
+InterfaceManager:SetLibrary(Fluent)
+SaveManager:IgnoreThemeSettings()
+SaveManager:SetIgnoreIndexes({})
+InterfaceManager:SetFolder("ThunderHub")
+SaveManager:SetFolder("ThunderHub/specific-game")
+InterfaceManager:BuildInterfaceSection(Window:AddTab({ Title = "Settings", Icon = "settings" }))
+Window:SelectTab(1)
+
+local antiafk = getconnections or get_signal_cons
+if antiafk then
+    for _, v in pairs(antiafk(game.Players.LocalPlayer.Idled)) do
+        if v.Disable then v:Disable() elseif v.Disconnect then v:Disconnect() end
+    end
+else
+    game.Players.LocalPlayer:Kick("⚡ Executor doesn't support getconnections()")
+end
